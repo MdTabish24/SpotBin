@@ -1,10 +1,13 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
-import { logger } from './config/logger';
+import { logger, requestLogger } from './config/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { requestIdMiddleware } from './middleware/requestId';
+import { apiRateLimiter } from './middleware/rateLimiter';
+import { setupSwagger } from './config/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -12,11 +15,30 @@ dotenv.config();
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for accurate IP detection behind load balancers
+app.set('trust proxy', 1);
+
+// Request ID middleware (must be first for log correlation)
+app.use(requestIdMiddleware);
+
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Required for Swagger UI
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-ID', 'X-Request-ID'],
 }));
 
 // Body parsing middleware
@@ -26,20 +48,22 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Compression middleware
 app.use(compression());
 
-// Request logging
-app.use((req: Request, _res: Response, next: NextFunction) => {
-  logger.info({
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    userAgent: req.get('user-agent'),
-  }, 'Incoming request');
-  next();
-});
+// Request logging middleware (with request ID correlation)
+app.use(requestLogger);
+
+// Setup Swagger API documentation
+setupSwagger(app);
+
+// Rate limiting middleware (100 requests/minute per IP)
+app.use('/api', apiRateLimiter);
 
 // Import health check functions
 import { checkDatabaseHealth } from './db/pool';
 import { checkRedisHealth } from './config/redis';
+
+// Import routes
+import reportRoutes from './routes/report.routes';
+import adminRoutes from './routes/admin.routes';
 
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {
@@ -60,10 +84,10 @@ app.get('/health', async (_req: Request, res: Response) => {
   });
 });
 
-// API routes will be added here
-// app.use('/api/v1/reports', reportRoutes);
+// API routes
+app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/admin', adminRoutes);
 // app.use('/api/v1/workers', workerRoutes);
-// app.use('/api/v1/admin', adminRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -82,6 +106,7 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`📚 API Docs: http://localhost:${PORT}/api-docs`);
 });
 
 export default app;

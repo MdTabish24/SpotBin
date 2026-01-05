@@ -2,12 +2,15 @@
 node_modules/
 .pnp/
 .pnp.js
+.pnpm-store/
+package-lock.json.bak
 
 # Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.expo-shared/
 
 # Native builds
 *.orig.*
@@ -19,14 +22,23 @@ expo-env.d.ts
 *.orig.*
 android/
 ios/
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
 
 # Environment files
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
 .env*.local
+*.env
 
 # IDE
 .idea/
@@ -35,6 +47,7 @@ ios/
 *.swo
 *.sublime-workspace
 *.sublime-project
+*.code-workspace
 
 # OS
 .DS_Store
@@ -44,6 +57,8 @@ ios/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Logs
 logs/
@@ -51,35 +66,72 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Testing
 coverage/
 .nyc_output/
+*.lcov
+jest-results/
+test-results/
 
 # Build
 build/
 dist/
 out/
+*.tsbuildinfo
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 *.temp
+*.bak
+*.backup
 
 # Cache
 .cache/
 .parcel-cache/
 .turbo/
+.eslintcache
+.stylelintcache
+*.tgz
 
 # Backend specific
 backend/node_modules/
 backend/dist/
 backend/.env
+backend/.env.*
 backend/coverage/
 backend/logs/
+backend/*.log
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
 
 # Misc
 *.pem
 .vercel
 .netlify
+.serverless/
+
+# Debug
+.debug/
+debug.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Metro bundler
+.metro-health-check*
+
+# Secrets - NEVER commit these
+*.secret
+*.secrets
+secrets/
+credentials/
+*.credential
+*.credentials

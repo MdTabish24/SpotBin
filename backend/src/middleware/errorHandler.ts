@@ -1,35 +1,60 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../config/logger';
+import { logger, createRequestLogger } from '../config/logger';
 
 export interface ApiError extends Error {
   statusCode?: number;
   code?: string;
   field?: string;
   retryAfter?: number;
+  isOperational?: boolean;
 }
 
+/**
+ * Central error handling middleware
+ * Logs errors with request context and returns consistent error responses
+ */
 export const errorHandler = (
   err: ApiError,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
   const statusCode = err.statusCode || 500;
   const code = err.code || 'INTERNAL_ERROR';
   const message = err.message || 'An unexpected error occurred';
+  const isOperational = err.isOperational ?? statusCode < 500;
 
-  logger.error({
-    err,
+  // Create request-scoped logger for correlation
+  const reqLogger = createRequestLogger(req);
+
+  // Log error with full context
+  const errorContext = {
     statusCode,
     code,
-  }, 'Error occurred');
+    isOperational,
+    stack: err.stack,
+    field: err.field,
+    body: statusCode >= 500 ? undefined : req.body, // Don't log body for server errors
+    query: req.query,
+    params: req.params,
+  };
 
+  if (statusCode >= 500) {
+    // Server errors - log as error with full stack trace
+    reqLogger.error(errorContext, `Server error: ${message}`);
+  } else if (statusCode >= 400) {
+    // Client errors - log as warning
+    reqLogger.warn(errorContext, `Client error: ${message}`);
+  }
+
+  // Send response
   res.status(statusCode).json({
     error: {
       code,
       message,
       ...(err.field && { field: err.field }),
       ...(err.retryAfter && { retryAfter: err.retryAfter }),
+      requestId: req.requestId, // Include for client-side debugging
     },
   });
 };
@@ -39,6 +64,7 @@ export class AppError extends Error implements ApiError {
   code: string;
   field?: string;
   retryAfter?: number;
+  isOperational: boolean;
 
   constructor(
     message: string,
@@ -52,6 +78,7 @@ export class AppError extends Error implements ApiError {
     this.code = code;
     this.field = field;
     this.retryAfter = retryAfter;
+    this.isOperational = true; // Operational errors are expected errors
     Error.captureStackTrace(this, this.constructor);
   }
 }

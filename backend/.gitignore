@@ -3,30 +3,72 @@ node_modules/
 
 # Build output
 dist/
+build/
+*.tsbuildinfo
 
 # Environment files
 .env
 .env.local
+.env.development
+.env.test
+.env.production
 .env.*.local
+*.env
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Logs
 logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
 # Test coverage
 coverage/
+.nyc_output/
+jest-results/
+test-results/
+*.lcov
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+*.temp
+*.bak
+
+# Cache
+.cache/
+.eslintcache
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads (if any)
+uploads/
+public/uploads/
+
+# Secrets - NEVER commit
+*.pem
+*.key
+*.secret
+*.secrets
+secrets/
+credentials/
+
+# Docker
+*.pid
+*.seed
