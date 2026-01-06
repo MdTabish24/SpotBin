@@ -1,11 +1,12 @@
 /**
  * Admin Routes - API endpoints for admin dashboard
- * Requirements: 9.4, 9.5
+ * Requirements: 9.4, 9.5, 10.1, 10.2, 10.3, 10.4
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { dashboardService } from '../services/dashboard.service';
 import { adminService, AdminReportFilters } from '../services/admin.service';
+import { approvalService } from '../services/approval.service';
 import { logger } from '../config/logger';
 import { ApiError, ReportStatus, Severity } from '../types';
 
@@ -321,6 +322,265 @@ router.get(
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
       const contributors = await dashboardService.getTopContributors(limit);
       res.json({ contributors });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// Approval Workflow Endpoints
+// Requirements: 10.1, 10.2, 10.3, 10.4
+// ============================================
+
+/**
+ * @swagger
+ * /api/v1/admin/verifications/pending:
+ *   get:
+ *     summary: Get pending verifications for admin review
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Number of verifications to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Offset for pagination
+ *     responses:
+ *       200:
+ *         description: List of pending verifications
+ */
+router.get(
+  '/verifications/pending',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+
+      const verifications = await approvalService.getPendingVerifications(limit, offset);
+      res.json({ verifications, count: verifications.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/v1/admin/verifications/{verificationId}:
+ *   get:
+ *     summary: Get a single verification by ID
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: verificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Verification details
+ *       404:
+ *         description: Verification not found
+ */
+router.get(
+  '/verifications/:verificationId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { verificationId } = req.params;
+      const verification = await approvalService.getVerificationById(verificationId);
+
+      if (!verification) {
+        const error: ApiError = {
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Verification not found'
+          }
+        };
+        return res.status(404).json(error);
+      }
+
+      res.json(verification);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/v1/admin/verifications/{verificationId}/approve:
+ *   post:
+ *     summary: Approve a verification
+ *     description: Approves the verification, changes report status to resolved, and credits points to citizen
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: verificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Verification approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 reportId:
+ *                   type: string
+ *                 verificationId:
+ *                   type: string
+ *                 pointsAwarded:
+ *                   type: number
+ *                 newStatus:
+ *                   type: string
+ *       400:
+ *         description: Invalid request or verification already processed
+ *       404:
+ *         description: Verification not found
+ */
+router.post(
+  '/verifications/:verificationId/approve',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { verificationId } = req.params;
+      // In production, adminId would come from JWT token
+      const adminId = req.body.adminId || 'admin';
+
+      const result = await approvalService.approveVerification(verificationId, adminId);
+
+      if (!result.success) {
+        const statusCode = result.error?.includes('not found') ? 404 : 400;
+        const error: ApiError = {
+          error: {
+            code: statusCode === 404 ? 'NOT_FOUND' : 'VALIDATION_ERROR',
+            message: result.error || 'Failed to approve verification'
+          }
+        };
+        return res.status(statusCode).json(error);
+      }
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/v1/admin/verifications/{verificationId}/reject:
+ *   post:
+ *     summary: Reject a verification
+ *     description: Rejects the verification and returns the task to the worker queue
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: verificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for rejection
+ *     responses:
+ *       200:
+ *         description: Verification rejected successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 reportId:
+ *                   type: string
+ *                 verificationId:
+ *                   type: string
+ *                 newStatus:
+ *                   type: string
+ *       400:
+ *         description: Invalid request or verification already processed
+ *       404:
+ *         description: Verification not found
+ */
+router.post(
+  '/verifications/:verificationId/reject',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { verificationId } = req.params;
+      const { reason } = req.body;
+      // In production, adminId would come from JWT token
+      const adminId = req.body.adminId || 'admin';
+
+      const result = await approvalService.rejectVerification(verificationId, reason, adminId);
+
+      if (!result.success) {
+        const statusCode = result.error?.includes('not found') ? 404 : 400;
+        const error: ApiError = {
+          error: {
+            code: statusCode === 404 ? 'NOT_FOUND' : 'VALIDATION_ERROR',
+            message: result.error || 'Failed to reject verification'
+          }
+        };
+        return res.status(statusCode).json(error);
+      }
+
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/v1/admin/verifications/stats:
+ *   get:
+ *     summary: Get approval workflow statistics
+ *     tags: [Admin]
+ *     responses:
+ *       200:
+ *         description: Approval statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 pendingCount:
+ *                   type: number
+ *                 approvedToday:
+ *                   type: number
+ *                 rejectedToday:
+ *                   type: number
+ *                 avgApprovalTime:
+ *                   type: number
+ */
+router.get(
+  '/verifications/stats',
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const stats = await approvalService.getApprovalStats();
+      res.json(stats);
     } catch (error) {
       next(error);
     }
