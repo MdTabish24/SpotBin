@@ -8,45 +8,56 @@
     "scheme": "cleancity",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "owner": "cleancity-team",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#10B981"
+      "backgroundColor": "#047857"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cleancity.app",
+      "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "CleanCity needs camera access to capture waste reports",
         "NSLocationWhenInUseUsageDescription": "CleanCity needs location access to tag waste reports with GPS coordinates",
-        "NSLocationAlwaysUsageDescription": "CleanCity needs location access to track worker locations for task verification"
+        "NSLocationAlwaysUsageDescription": "CleanCity needs location access to track worker locations for task verification",
+        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
       },
       "config": {
         "googleMapsApiKey": "YOUR_GOOGLE_MAPS_IOS_API_KEY"
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#10B981"
+        "backgroundColor": "#047857"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.cleancity.app",
+      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
       ],
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_ANDROID_API_KEY"
         }
-      }
+      },
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
@@ -58,10 +69,21 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "CleanCity needs location access to tag waste reports with GPS coordinates"
+          "locationAlwaysAndWhenInUsePermission": "CleanCity needs location access to tag waste reports with GPS coordinates",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#047857",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {
@@ -69,6 +91,9 @@
       }
     },
     "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 30000,
       "url": "https://u.expo.dev/your-eas-project-id"
     },
     "runtimeVersion": {

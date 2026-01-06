@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Search,
   Filter,
   ChevronLeft,
   ChevronRight,
@@ -20,7 +19,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { StatusBadge, SeverityBadge } from '../components/ui/Badge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import type { Report, ReportFilters, ReportStatus, Severity } from '../types';
+import type { Report, ReportFilters } from '../types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Status' },

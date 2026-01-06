@@ -12,11 +12,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import {
-  Calendar,
   Download,
   FileText,
   TrendingUp,
@@ -41,7 +39,7 @@ export default function AnalyticsPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   // Fetch analytics data
-  const { data: analytics, isLoading, error, refetch } = useQuery<AnalyticsReport>({
+  const { data: analytics, isLoading, error } = useQuery<AnalyticsReport>({
     queryKey: ['analytics', startDate, endDate],
     queryFn: () => analyticsApi.getReport(startDate, endDate),
     enabled: !!startDate && !!endDate,

@@ -1,0 +1,53 @@
+# Render Blueprint for CleanCity Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: cleancity-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cleancity-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: cleancity-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+
+databases:
+  - name: cleancity-db
+    databaseName: cleancity
+    plan: starter
+    region: singapore
+    postgresMajorVersion: 16
+
+# Note: Redis requires Render's Redis service or external provider like Upstash

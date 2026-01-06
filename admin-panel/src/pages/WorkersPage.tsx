@@ -6,7 +6,6 @@ import {
   MapPin,
   Phone,
   CheckCircle,
-  XCircle,
   Bell,
   Edit,
   X,

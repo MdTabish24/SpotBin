@@ -6,3 +6,5 @@ export { useSecureStorage, secureStorage, STORAGE_KEYS } from './useSecureStorag
 export { useDeviceFingerprint } from './useDeviceFingerprint';
 export { useWorkerAuth } from './useWorkerAuth';
 export { useOfflineTaskCache } from './useOfflineTaskCache';
+export { useOfflineReportStorage, type PendingReport } from './useOfflineReportStorage';
+export { useSyncManager, type SyncStatus } from './useSyncManager';
