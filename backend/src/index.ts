@@ -7,6 +7,7 @@ import { logger, requestLogger } from './config/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
 import { apiRateLimiter } from './middleware/rateLimiter';
+import { xssSanitizer } from './middleware/xssSanitizer';
 import { setupSwagger } from './config/swagger';
 
 // Load environment variables
@@ -44,6 +45,9 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// XSS Sanitization middleware (after body parsing, before routes)
+app.use(xssSanitizer);
 
 // Compression middleware
 app.use(compression());
