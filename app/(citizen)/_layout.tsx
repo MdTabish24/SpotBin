@@ -1,12 +1,16 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * Citizen app tab navigation layout
  * Main tabs: Camera (home), My Reports, Leaderboard, Profile
  */
 export default function CitizenLayout() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = Platform.OS === 'ios' ? 88 : 60 + insets.bottom;
+  
   return (
     <Tabs
       screenOptions={{
@@ -16,8 +20,8 @@ export default function CitizenLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
           position: 'absolute',
           elevation: 8,
@@ -40,17 +44,6 @@ export default function CitizenLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera" size={size} color={color} />
           ),
-          // Make tab bar semi-transparent on camera screen
-          tabBarStyle: {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderTopColor: 'transparent',
-            borderTopWidth: 0,
-            height: Platform.OS === 'ios' ? 88 : 64,
-            paddingBottom: Platform.OS === 'ios' ? 28 : 8,
-            paddingTop: 8,
-            position: 'absolute',
-            elevation: 0,
-          },
         }}
       />
       <Tabs.Screen

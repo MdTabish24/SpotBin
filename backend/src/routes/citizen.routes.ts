@@ -43,7 +43,7 @@ router.get('/stats', async (req: Request, res: Response, next: NextFunction) => 
     }
 
     const stats = await pointsService.getUserStats(deviceId);
-    res.json(stats);
+    res.json({ stats });
   } catch (error) {
     next(error);
   }

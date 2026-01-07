@@ -64,7 +64,12 @@ app.use(requestLogger);
 setupSwagger(app);
 
 // Serve uploaded files locally (for development without S3)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Add CORS headers for images
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'uploads')));
 
 // Rate limiting middleware (100 requests/minute per IP)
 app.use('/api', apiRateLimiter);

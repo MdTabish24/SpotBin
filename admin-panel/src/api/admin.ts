@@ -79,6 +79,10 @@ export const reportsApi = {
     return response.data.report;
   },
 
+  async updateReportStatus(reportId: string, status: string): Promise<void> {
+    await apiClient.patch(`/admin/reports/${reportId}/status`, { status });
+  },
+
   async approveVerification(reportId: string): Promise<void> {
     await apiClient.post(`/admin/reports/${reportId}/approve`);
   },

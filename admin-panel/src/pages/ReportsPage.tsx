@@ -52,6 +52,15 @@ export default function ReportsPage() {
     queryFn: () => reportsApi.getReports(filters),
   });
 
+  // Status update mutation
+  const statusMutation = useMutation({
+    mutationFn: ({ reportId, status }: { reportId: string; status: string }) => 
+      reportsApi.updateReportStatus(reportId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+  });
+
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: (reportId: string) => reportsApi.approveVerification(reportId),
@@ -185,9 +194,13 @@ export default function ReportsPage() {
                           <img
                             src={report.photoUrl?.startsWith('http') ? report.photoUrl : `http://localhost:3000${report.photoUrl}`}
                             alt="Report"
-                            className="w-12 h-12 rounded-lg object-cover"
+                            className="w-12 h-12 rounded-lg object-cover bg-gray-200"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48?text=No+Image';
+                              const target = e.target as HTMLImageElement;
+                              if (!target.dataset.fallback) {
+                                target.dataset.fallback = 'true';
+                                target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="%239CA3AF" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+                              }
                             }}
                           />
                           <div className="ml-3">
@@ -201,7 +214,21 @@ export default function ReportsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <StatusBadge status={report.status} />
+                        <select
+                          value={report.status}
+                          onChange={(e) => statusMutation.mutate({ 
+                            reportId: report.id, 
+                            status: e.target.value 
+                          })}
+                          disabled={statusMutation.isPending}
+                          className="text-sm border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary focus:border-primary"
+                        >
+                          <option value="open">🔴 Open</option>
+                          <option value="assigned">🟡 Assigned</option>
+                          <option value="in_progress">🔵 In Progress</option>
+                          <option value="verified">🟣 Verified</option>
+                          <option value="resolved">🟢 Resolved</option>
+                        </select>
                       </td>
                       <td className="px-4 py-4">
                         <SeverityBadge severity={report.severity} />
@@ -357,9 +384,13 @@ function ReportDetailModal({
             <img
               src={report.photoUrl?.startsWith('http') ? report.photoUrl : `http://localhost:3000${report.photoUrl}`}
               alt="Report"
-              className="w-full h-64 object-cover rounded-xl"
+              className="w-full h-64 object-cover rounded-xl bg-gray-200"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x256?text=No+Image';
+                const target = e.target as HTMLImageElement;
+                if (!target.dataset.fallback) {
+                  target.dataset.fallback = 'true';
+                  target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="256" viewBox="0 0 24 24" fill="none" stroke="%239CA3AF" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+                }
               }}
             />
           </div>

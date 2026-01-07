@@ -249,6 +249,103 @@ router.get(
 
 /**
  * @swagger
+ * /api/v1/admin/reports/{reportId}/status:
+ *   patch:
+ *     summary: Update report status
+ *     tags: [Admin]
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [open, assigned, in_progress, verified, resolved]
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ */
+router.patch(
+  '/reports/:reportId/status',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reportId } = req.params;
+      const { status } = req.body;
+
+      // Validate status
+      if (!status || !Object.values(ReportStatus).includes(status as ReportStatus)) {
+        const error: ApiError = {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Invalid status. Must be one of: ${Object.values(ReportStatus).join(', ')}`,
+            field: 'status'
+          }
+        };
+        return res.status(400).json(error);
+      }
+
+      // Update status using report service
+      const { reportService } = await import('../services/report.service');
+      await reportService.updateReportStatus(reportId, status as ReportStatus);
+
+      // Award points when status is resolved
+      let pointsAwarded = 0;
+      if (status === ReportStatus.RESOLVED) {
+        try {
+          // Get report to find device_id and severity
+          const report = await reportService.getReportById(reportId);
+          if (report && report.deviceId) {
+            const { pointsService } = await import('../services/points.service');
+            pointsAwarded = await pointsService.awardPoints(
+              report.deviceId,
+              reportId,
+              'report_verified',
+              report.severity
+            );
+            
+            // Update points_awarded in report
+            const pool = (await import('../db/pool')).default;
+            await pool.query(
+              'UPDATE reports SET points_awarded = $1 WHERE id = $2',
+              [pointsAwarded, reportId]
+            );
+            
+            logger.info({ reportId, deviceId: report.deviceId, pointsAwarded }, 'Points awarded for resolved report');
+          }
+        } catch (pointsError) {
+          logger.error({ pointsError, reportId }, 'Failed to award points');
+          // Don't fail the status update if points fail
+        }
+      }
+
+      logger.info({ reportId, status, pointsAwarded }, 'Report status updated by admin');
+
+      res.json({ 
+        success: true, 
+        message: `Report status updated to ${status}`,
+        reportId,
+        status,
+        pointsAwarded
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/v1/admin/stats/summary:
  *   get:
  *     summary: Get quick summary stats (lightweight endpoint)
