@@ -178,12 +178,12 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {data?.data.map((report) => (
+                  {data?.reports?.map((report) => (
                     <tr key={report.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4">
                         <div className="flex items-center">
                           <img
-                            src={report.photoUrl}
+                            src={report.photoUrl?.startsWith('http') ? report.photoUrl : `http://localhost:3000${report.photoUrl}`}
                             alt="Report"
                             className="w-12 h-12 rounded-lg object-cover"
                             onError={(e) => {
@@ -355,7 +355,7 @@ function ReportDetailModal({
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">Report Photo</h3>
             <img
-              src={report.photoUrl}
+              src={report.photoUrl?.startsWith('http') ? report.photoUrl : `http://localhost:3000${report.photoUrl}`}
               alt="Report"
               className="w-full h-64 object-cover rounded-xl"
               onError={(e) => {

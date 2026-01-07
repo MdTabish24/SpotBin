@@ -12,9 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 
 import { reportApi, WasteReport } from '../../src/api/reports';
+import { getFullImageUrl } from '../../src/api/client';
 import { LoadingSpinner } from '../../src/components/ui/LoadingSpinner';
 import { Modal } from '../../src/components/ui/Modal';
 import { Button } from '../../src/components/ui/Button';
+import { FreeMap, MapMarker } from '../../src/components/ui/FreeMap';
 import { showErrorToast } from '../../src/components/Toast';
 
 // Status configuration
@@ -44,6 +46,7 @@ export default function ReportsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedReport, setSelectedReport] = useState<WasteReport | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // Fetch reports when screen is focused
   useFocusEffect(
@@ -101,6 +104,11 @@ export default function ReportsScreen() {
   };
 
   const renderReportItem = ({ item }: { item: WasteReport }) => {
+    // Skip rendering if item is invalid
+    if (!item || !item.id) {
+      return null;
+    }
+    
     const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.open;
     const severityConfig = item.severity ? SEVERITY_CONFIG[item.severity] : null;
 
@@ -108,17 +116,23 @@ export default function ReportsScreen() {
       <TouchableOpacity
         onPress={() => handleReportPress(item)}
         className="bg-white rounded-xl mb-3 overflow-hidden shadow-sm"
-        accessibilityLabel={`Report ${item.id.slice(0, 8)}, status ${statusConfig.label}`}
+        accessibilityLabel={`Report ${item.id?.slice(0, 8) || 'unknown'}, status ${statusConfig.label}`}
         accessibilityRole="button"
         style={{ minHeight: 44 }}
       >
         <View className="flex-row">
           {/* Thumbnail */}
-          <Image
-            source={{ uri: item.photoUrl }}
-            className="w-24 h-24"
-            resizeMode="cover"
-          />
+          {item.photoUrl ? (
+            <Image
+              source={{ uri: getFullImageUrl(item.photoUrl) }}
+              className="w-24 h-24"
+              resizeMode="cover"
+            />
+          ) : (
+            <View className="w-24 h-24 bg-gray-200 items-center justify-center">
+              <Ionicons name="image-outline" size={32} color="#9CA3AF" />
+            </View>
+          )}
 
           {/* Content */}
           <View className="flex-1 p-3">
@@ -142,28 +156,28 @@ export default function ReportsScreen() {
 
             {/* Description or ID */}
             <Text className="text-text-primary font-medium" numberOfLines={1}>
-              {item.description || `Report #${item.id.slice(0, 8)}`}
+              {item.description || `Report #${item.id?.slice(0, 8) || 'unknown'}`}
             </Text>
 
             {/* Location and time */}
             <View className="flex-row items-center mt-1">
               <Ionicons name="location-outline" size={12} color="#6B7280" />
               <Text className="text-xs text-text-secondary ml-1" numberOfLines={1}>
-                {item.location.lat.toFixed(4)}, {item.location.lng.toFixed(4)}
+                {item.location?.lat?.toFixed(4) || '0.0000'}, {item.location?.lng?.toFixed(4) || '0.0000'}
               </Text>
             </View>
 
             <View className="flex-row items-center mt-1">
               <Ionicons name="time-outline" size={12} color="#6B7280" />
               <Text className="text-xs text-text-secondary ml-1">
-                {formatTimeAgo(item.createdAt)}
+                {item.createdAt ? formatTimeAgo(item.createdAt) : 'Just now'}
               </Text>
               
               {item.pointsAwarded && item.pointsAwarded > 0 && (
                 <View className="flex-row items-center ml-3">
                   <Ionicons name="star" size={12} color="#F59E0B" />
                   <Text className="text-xs text-yellow-600 ml-1">
-                    +{item.pointsAwarded} pts
+                    {`+${item.pointsAwarded} pts`}
                   </Text>
                 </View>
               )}
@@ -192,19 +206,49 @@ export default function ReportsScreen() {
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-gray-200">
-        <Text className="text-2xl font-bold text-text-primary">
-          My Reports
-        </Text>
-        <Text className="text-sm text-text-secondary mt-1">
-          {reports.length > 0
-            ? `${reports.length} report${reports.length !== 1 ? 's' : ''} submitted`
-            : 'Track the status of your waste reports'}
-        </Text>
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-2xl font-bold text-text-primary">
+              My Reports
+            </Text>
+            <Text className="text-sm text-text-secondary mt-1">
+              {reports.length > 0
+                ? `${reports.length} report${reports.length !== 1 ? 's' : ''} submitted`
+                : 'Track the status of your waste reports'}
+            </Text>
+          </View>
+          
+          {/* View Toggle */}
+          {reports.length > 0 && (
+            <View className="flex-row bg-gray-100 rounded-lg p-1">
+              <TouchableOpacity
+                onPress={() => setViewMode('list')}
+                className={`px-3 py-2 rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+              >
+                <Ionicons 
+                  name="list" 
+                  size={20} 
+                  color={viewMode === 'list' ? '#10B981' : '#6B7280'} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setViewMode('map')}
+                className={`px-3 py-2 rounded-md ${viewMode === 'map' ? 'bg-white shadow-sm' : ''}`}
+              >
+                <Ionicons 
+                  name="map" 
+                  size={20} 
+                  color={viewMode === 'map' ? '#10B981' : '#6B7280'} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* Reports list */}
+      {/* Reports list or map */}
       {reports.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
+        <View className="flex-1 items-center justify-center px-8 pb-20">
           <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
           <Text className="text-lg font-semibold text-text-primary mt-4">
             No reports yet
@@ -213,12 +257,49 @@ export default function ReportsScreen() {
             Start by capturing a photo of waste in your area
           </Text>
         </View>
+      ) : viewMode === 'map' ? (
+        /* Map View */
+        <View className="flex-1 p-4 pb-24">
+          <FreeMap
+            center={{
+              lat: reports[0]?.location?.lat || 19.076,
+              lng: reports[0]?.location?.lng || 72.8777,
+            }}
+            zoom={12}
+            markers={reports.filter(r => r.location?.lat && r.location?.lng).map(report => ({
+              id: report.id,
+              lat: report.location.lat,
+              lng: report.location.lng,
+              color: STATUS_CONFIG[report.status]?.color || '#EF4444',
+              title: `#${report.id.slice(0, 8)}`,
+              description: STATUS_CONFIG[report.status]?.label || 'Open',
+            }))}
+            onMarkerPress={(marker) => {
+              const report = reports.find(r => r.id === marker.id);
+              if (report) handleReportPress(report);
+            }}
+            style={{ flex: 1, borderRadius: 16 }}
+          />
+          {/* Map Legend */}
+          <View className="flex-row flex-wrap justify-center mt-3 gap-3">
+            {Object.entries(STATUS_CONFIG).slice(0, 4).map(([status, config]) => (
+              <View key={status} className="flex-row items-center">
+                <View 
+                  className="w-3 h-3 rounded-full mr-1"
+                  style={{ backgroundColor: config.color }}
+                />
+                <Text className="text-xs text-gray-600">{config.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       ) : (
+        /* List View */
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id}
           renderItem={renderReportItem}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -241,7 +322,7 @@ export default function ReportsScreen() {
           <View>
             {/* Main photo */}
             <Image
-              source={{ uri: selectedReport.photoUrl }}
+              source={{ uri: getFullImageUrl(selectedReport.photoUrl) }}
               className="w-full h-48 rounded-xl"
               resizeMode="cover"
             />
@@ -301,7 +382,7 @@ export default function ReportsScreen() {
               <View className="flex-row justify-between mb-2">
                 <Text className="text-text-secondary">Location</Text>
                 <Text className="text-text-primary">
-                  {selectedReport.location.lat.toFixed(4)}, {selectedReport.location.lng.toFixed(4)}
+                  {selectedReport.location?.lat?.toFixed(4) || '0.0000'}, {selectedReport.location?.lng?.toFixed(4) || '0.0000'}
                 </Text>
               </View>
               
@@ -315,6 +396,29 @@ export default function ReportsScreen() {
               )}
             </View>
 
+            {/* Mini Map */}
+            {selectedReport.location?.lat && selectedReport.location?.lng && (
+            <View className="mt-4">
+              <Text className="text-sm text-text-secondary mb-2">Location on Map</Text>
+              <View style={{ height: 150, borderRadius: 12, overflow: 'hidden' }}>
+                <FreeMap
+                  center={{
+                    lat: selectedReport.location.lat,
+                    lng: selectedReport.location.lng,
+                  }}
+                  zoom={15}
+                  markers={[{
+                    id: selectedReport.id,
+                    lat: selectedReport.location.lat,
+                    lng: selectedReport.location.lng,
+                    color: STATUS_CONFIG[selectedReport.status]?.color || '#EF4444',
+                    title: `#${selectedReport.id.slice(0, 8)}`,
+                  }]}
+                />
+              </View>
+            </View>
+            )}
+
             {/* Before/After photos for resolved reports */}
             {selectedReport.status === 'resolved' && (
               <View className="mt-4">
@@ -323,7 +427,7 @@ export default function ReportsScreen() {
                   {selectedReport.beforePhotoUrl && (
                     <View className="flex-1 mr-2">
                       <Image
-                        source={{ uri: selectedReport.beforePhotoUrl }}
+                        source={{ uri: getFullImageUrl(selectedReport.beforePhotoUrl) }}
                         className="w-full h-32 rounded-xl"
                         resizeMode="cover"
                       />
@@ -333,7 +437,7 @@ export default function ReportsScreen() {
                   {selectedReport.afterPhotoUrl && (
                     <View className="flex-1 ml-2">
                       <Image
-                        source={{ uri: selectedReport.afterPhotoUrl }}
+                        source={{ uri: getFullImageUrl(selectedReport.afterPhotoUrl) }}
                         className="w-full h-32 rounded-xl"
                         resizeMode="cover"
                       />

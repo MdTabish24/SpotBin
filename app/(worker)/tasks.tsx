@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 
 import { workerTaskApi, Task } from '../../src/api/worker';
 import { useWorkerAuth } from '../../src/hooks/useWorkerAuth';
@@ -21,6 +20,7 @@ import { useLocation, calculateDistance } from '../../src/hooks/useLocation';
 import { useOfflineTaskCache } from '../../src/hooks/useOfflineTaskCache';
 import { LoadingSpinner } from '../../src/components/ui/LoadingSpinner';
 import { Button } from '../../src/components/ui/Button';
+import { FreeMap } from '../../src/components/ui/FreeMap';
 import { showErrorToast, showInfoToast } from '../../src/components/Toast';
 
 type ViewMode = 'map' | 'list';
@@ -49,7 +49,6 @@ const SEVERITY_CONFIG: Record<string, { color: string; weight: number }> = {
  */
 export default function WorkerTasksScreen() {
   const router = useRouter();
-  const mapRef = useRef<MapView>(null);
   
   const { worker, isAuthenticated, isLoading: authLoading, logout } = useWorkerAuth();
   const { location, getCurrentLocation, watchLocation, stopWatching } = useLocation();
@@ -400,31 +399,29 @@ export default function WorkerTasksScreen() {
       {/* Content */}
       {viewMode === 'map' ? (
         <View className="flex-1">
-          <MapView
-            ref={mapRef}
-            style={{ flex: 1 }}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={{
-              latitude: location?.lat || 19.076,
-              longitude: location?.lng || 72.8777,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
+          {/* FREE OpenStreetMap */}
+          <FreeMap
+            center={{
+              lat: location?.lat || 19.076,
+              lng: location?.lng || 72.8777,
             }}
-            showsUserLocation
-            showsMyLocationButton
-          >
-            {filteredTasks.map((task) => (
-              <Marker
-                key={task.reportId}
-                coordinate={{
-                  latitude: task.location.lat,
-                  longitude: task.location.lng,
-                }}
-                pinColor={getMarkerColor(task.status)}
-                onPress={() => handleMarkerPress(task)}
-              />
-            ))}
-          </MapView>
+            zoom={13}
+            markers={filteredTasks.map(task => ({
+              id: task.reportId,
+              lat: task.location.lat,
+              lng: task.location.lng,
+              color: STATUS_CONFIG[task.status]?.color || '#EF4444',
+              title: `#${task.reportId.slice(0, 8)}`,
+              description: `${STATUS_CONFIG[task.status]?.label} - ${task.severity}`,
+            }))}
+            onMarkerPress={(marker) => {
+              const task = filteredTasks.find(t => t.reportId === marker.id);
+              if (task) setSelectedTask(task);
+            }}
+            showUserLocation={true}
+            userLocation={location}
+            style={{ flex: 1 }}
+          />
 
           {/* Selected task card */}
           {selectedTask && (

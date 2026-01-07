@@ -204,6 +204,48 @@ router.post(
 
 /**
  * @swagger
+ * /api/v1/reports/my:
+ *   get:
+ *     summary: Get current user's reports
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: header
+ *         name: X-Device-ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of user's reports
+ *       400:
+ *         description: Device ID required
+ */
+router.get(
+  '/my',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const deviceId = req.headers['x-device-id'] as string;
+
+      if (!deviceId) {
+        const error: ApiError = {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'X-Device-ID header is required'
+          }
+        };
+        return res.status(400).json(error);
+      }
+
+      const reports = await reportService.getReportsByDevice(deviceId);
+      res.json({ reports, count: reports.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/v1/reports/device/{deviceId}:
  *   get:
  *     summary: Get all reports for a device

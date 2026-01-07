@@ -52,8 +52,7 @@
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_ANDROID_API_KEY"
         }
-      },
-      "googleServicesFile": "./google-services.json"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -91,10 +90,7 @@
       }
     },
     "updates": {
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 30000,
-      "url": "https://u.expo.dev/your-eas-project-id"
+      "enabled": false
     },
     "runtimeVersion": {
       "policy": "appVersion"

@@ -382,8 +382,8 @@ export default function ProfileScreen() {
           </Card>
         )}
 
-        {/* Spacer */}
-        <View className="h-4" />
+        {/* Spacer for tab bar */}
+        <View className="h-24" />
       </ScrollView>
     </SafeAreaView>
   );

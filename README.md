@@ -1,335 +1,253 @@
 # 🌿 CleanCity - Smart Waste Management Platform
 
-<p align="center">
-  <img src="assets/icon.png" alt="CleanCity Logo" width="120" height="120">
-</p>
+A full-stack waste management app where citizens report waste, workers clean it, and admins monitor everything.
 
-<p align="center">
-  <strong>Empowering citizens to keep cities clean through gamified waste reporting</strong>
-</p>
+## 📱 What's Included
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#deployment">Deployment</a> •
-  <a href="#api-docs">API Docs</a>
-</p>
+| Component | Description | Port |
+|-----------|-------------|------|
+| Mobile App | React Native + Expo (Citizen reporting) | 8081 |
+| Backend API | Node.js + Express | 3000 |
+| Admin Panel | React + Vite (Government dashboard) | 3001 |
+| PostgreSQL | Database | 5432 |
+| Redis | Cache | 6379 |
 
 ---
 
-## 🎯 Overview
+## 🚀 Quick Start (Complete Setup)
 
-CleanCity is a full-stack waste management platform that enables:
-- **Citizens** to report waste hotspots with zero friction (no account required)
-- **Workers** to efficiently manage and verify cleanup tasks
-- **Administrators** to monitor city cleanliness through real-time dashboards
+### Prerequisites - Install These First
 
-Built with modern technologies for performance on low-end devices and offline support.
+1. **Node.js 20+** - https://nodejs.org/
+2. **Docker Desktop** - https://www.docker.com/products/docker-desktop/
+3. **Git** - https://git-scm.com/downloads
+4. **Expo Go App** - Install on your phone from Play Store/App Store
 
-## ✨ Features
-
-### Citizen App
-- 📸 One-tap photo capture with GPS tagging
-- 🎮 Gamification with points, badges, and leaderboards
-- 📊 Track report status in real-time
-- 🔔 Push notifications on status updates
-- 📴 Offline support with auto-sync
-
-### Worker App
-- 🗺️ Map view with clustered task markers
-- 📋 Priority-sorted task list
-- 📍 GPS-validated before/after photos
-- 🧭 Navigation integration with Google Maps
-- 📴 Offline task caching
-
-### Admin Panel
-- 📈 Real-time analytics dashboard
-- 🗺️ Interactive map with report clusters
-- 👷 Worker management and zone assignment
-- ✅ Verification approval workflow
-- 📊 Export reports as PDF/Excel
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Client Layer                            │
-├─────────────────┬─────────────────┬─────────────────────────┤
-│  Citizen App    │   Worker App    │     Admin Panel         │
-│  (React Native) │  (React Native) │    (React + Vite)       │
-└────────┬────────┴────────┬────────┴───────────┬─────────────┘
-         │                 │                     │
-         └─────────────────┼─────────────────────┘
-                           │
-                    ┌──────▼──────┐
-                    │   Express   │
-                    │   Backend   │
-                    └──────┬──────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-    ┌────▼────┐      ┌─────▼─────┐     ┌─────▼─────┐
-    │PostgreSQL│      │   Redis   │     │  S3/R2    │
-    │ Database │      │   Cache   │     │  Storage  │
-    └──────────┘      └───────────┘     └───────────┘
-```
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Mobile Apps | React Native + Expo SDK 54 |
-| Styling | NativeWind (Tailwind CSS) |
-| Admin Panel | React 18 + Vite + Tailwind |
-| Backend | Node.js + Express.js |
-| Database | PostgreSQL 16 |
-| Cache | Redis 7 |
-| Storage | AWS S3 / Cloudflare R2 |
-| Maps | Google Maps |
-| Push Notifications | Firebase Cloud Messaging |
-| CI/CD | GitHub Actions + EAS Build |
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- Docker & Docker Compose
-- Expo CLI (`npm install -g expo-cli`)
-- EAS CLI (`npm install -g eas-cli`)
-
-### 1. Clone Repository
+### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/cleancity.git
+git clone https://github.com/your-username/cleancity.git
 cd cleancity
 ```
 
-### 2. Start Database Services
+### Step 2: Start Database (Docker)
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
-### 3. Setup Backend
+Wait 10 seconds for databases to start. Verify:
+```bash
+docker ps
+```
+You should see `cleancity-postgres-dev` and `cleancity-redis-dev` running.
+
+### Step 3: Setup Backend
 
 ```bash
 cd backend
-cp .env.example .env
 npm install
+```
+
+Create `.env` file in `backend/` folder:
+```env
+PORT=3000
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cleancity
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your-super-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
+CORS_ORIGIN=*
+```
+
+Run database migrations and seed data:
+```bash
 npm run migrate
 npm run seed
+```
+
+Start backend:
+```bash
 npm run dev
 ```
 
-### 4. Setup Mobile App
+✅ Backend running at http://localhost:3000
+✅ API Docs at http://localhost:3000/api-docs
 
+### Step 4: Setup Admin Panel
+
+Open NEW terminal:
 ```bash
-cd ..
-npm install --legacy-peer-deps
-npx expo start
-```
-
-### 5. Setup Admin Panel
-
-```bash
-cd admin-panel
-cp .env.example .env
+cd cleancity/admin-panel
 npm install
+```
+
+`.env` file already exists. Start admin panel:
+```bash
 npm run dev
 ```
 
-## 📱 Running on Device
+✅ Admin Panel at http://localhost:3001
 
-### Android
+**Login Credentials:**
+- Email: `admin@cleancity.in`
+- Password: `admin123`
 
+### Step 5: Setup Mobile App
+
+Open NEW terminal:
 ```bash
-npx expo start --android
+cd cleancity
+npm install --legacy-peer-deps
 ```
 
-### iOS
+Find your computer's IP address:
+- **Windows**: Run `ipconfig` → Look for IPv4 Address (e.g., 192.168.0.103)
+- **Mac/Linux**: Run `ifconfig` or `ip addr`
 
-```bash
-npx expo start --ios
+Update IP in `src/config/env.ts`:
+```typescript
+API_BASE_URL: __DEV__ 
+  ? 'http://YOUR_IP_HERE:3000/api/v1'  // Replace with your IP
+  : 'https://api.cleancity.in/v1',
 ```
 
-### Development Build
-
-```bash
-eas build --profile development --platform android
+Also update in `src/api/client.ts`:
+```typescript
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://YOUR_IP_HERE:3000/api/v1';
 ```
 
-## 🌐 Deployment
-
-### Backend (Railway)
-
+Start Expo:
 ```bash
-railway up
+npx expo start --lan --clear
 ```
 
-### Admin Panel (Vercel)
+✅ Scan QR code with Expo Go app on your phone
 
+---
+
+## 📱 Using the App
+
+### Citizen Flow (Mobile App)
+1. Open app → You're on Report tab
+2. Tap camera → Take photo of waste
+3. Add description (optional) → Submit
+4. Go to "My Reports" tab → See your submitted reports
+5. Go to "Leaderboard" → See points and rankings
+
+### Admin Flow (Web Panel)
+1. Open http://localhost:3001
+2. Login with `admin@cleancity.in` / `admin123`
+3. Dashboard → See overview stats
+4. Reports → See all citizen reports with photos
+5. Workers → Manage cleanup workers
+
+---
+
+## 🔧 Troubleshooting
+
+### "Cannot connect to backend" on mobile
+- Make sure phone and computer are on SAME WiFi
+- Check IP address is correct in `src/config/env.ts`
+- Backend must be running (`npm run dev` in backend folder)
+
+### "Port already in use"
 ```bash
-cd admin-panel
-vercel --prod
+# Kill process on port 3000 (Windows)
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Kill process on port 3000 (Mac/Linux)
+lsof -i :3000
+kill -9 <PID>
 ```
 
-### Mobile Apps (EAS)
-
+### "Docker containers not starting"
 ```bash
-# Build for production
-eas build --platform all --profile production
-
-# Submit to stores
-eas submit --platform all
-
-# OTA Update
-eas update --branch production --message "Bug fixes"
+docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml up -d
 ```
 
-See [PRODUCTION_SETUP.md](docs/PRODUCTION_SETUP.md) for detailed deployment guide.
-
-## 📚 API Documentation
-
-API documentation is available at:
-- **Local**: http://localhost:3000/api-docs
-- **Production**: https://api.cleancity.in/api-docs
-
-### Key Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/reports` | Submit waste report |
-| GET | `/api/reports/:deviceId` | Get reports by device |
-| GET | `/api/leaderboard` | Get leaderboard |
-| POST | `/api/auth/otp/send` | Send OTP to worker |
-| POST | `/api/auth/otp/verify` | Verify OTP |
-| GET | `/api/tasks` | Get worker tasks |
-| POST | `/api/verifications` | Submit verification |
-| GET | `/api/admin/dashboard` | Get dashboard stats |
-
-## 🧪 Testing
-
-### Run All Tests
-
+### "Database migration failed"
 ```bash
 cd backend
-npm test
+docker exec cleancity-postgres-dev psql -U postgres -d cleancity -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+npm run migrate
+npm run seed
 ```
 
-### Run Property Tests
+### "White screen on mobile app"
+- Shake phone → Tap "Reload"
+- Or restart Expo: `npx expo start --lan --clear`
 
-```bash
-npm test -- --testPathPattern=property
-```
-
-### Test Coverage
-
-```bash
-npm test -- --coverage
-```
+---
 
 ## 📁 Project Structure
 
 ```
 cleancity/
-├── app/                    # Expo Router pages
-│   ├── (citizen)/          # Citizen app screens
-│   ├── (worker)/           # Worker app screens
-│   └── index.tsx           # Entry point
+├── app/                    # Mobile app screens (Expo Router)
+│   ├── (citizen)/          # Citizen tabs (Report, My Reports, Leaderboard, Profile)
+│   └── index.tsx           # Entry screen
 ├── src/
-│   ├── components/         # Shared UI components
-│   ├── hooks/              # Custom React hooks
-│   ├── services/           # API services
-│   ├── utils/              # Utility functions
-│   └── i18n/               # Translations
+│   ├── api/                # API client
+│   ├── components/         # Reusable UI components
+│   └── hooks/              # Custom React hooks
 ├── backend/
 │   ├── src/
-│   │   ├── routes/         # API routes
+│   │   ├── routes/         # API endpoints
 │   │   ├── services/       # Business logic
-│   │   ├── middleware/     # Express middleware
 │   │   └── db/             # Database migrations
-│   └── tests/              # Test files
+│   └── uploads/            # Uploaded images (local dev)
 ├── admin-panel/
 │   └── src/
 │       ├── pages/          # Admin pages
-│       ├── components/     # Admin components
-│       └── services/       # API services
-└── docs/                   # Documentation
+│       └── components/     # Admin UI components
+└── docker-compose.dev.yml  # Database containers
 ```
 
-## 🔐 Environment Variables
+---
 
-### Backend
+## 🌐 API Endpoints
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `JWT_SECRET` | JWT signing secret |
-| `AWS_ACCESS_KEY_ID` | S3/R2 access key |
-| `AWS_SECRET_ACCESS_KEY` | S3/R2 secret key |
-| `S3_BUCKET_NAME` | Storage bucket name |
-| `FIREBASE_PROJECT_ID` | Firebase project ID |
-| `GOOGLE_MAPS_API_KEY` | Google Maps API key |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/reports` | Submit waste report |
+| GET | `/api/v1/reports/my` | Get user's reports |
+| GET | `/api/v1/leaderboard` | Get leaderboard |
+| GET | `/api/v1/citizens/stats` | Get user stats |
+| POST | `/api/auth/admin/login` | Admin login |
+| GET | `/api/v1/admin/reports` | Get all reports (admin) |
+| GET | `/api/v1/admin/dashboard` | Dashboard stats (admin) |
 
-### Mobile App
+Full API docs: http://localhost:3000/api-docs
 
-| Variable | Description |
-|----------|-------------|
-| `EXPO_PUBLIC_API_URL` | Backend API URL |
-| `GOOGLE_MAPS_ANDROID_API_KEY` | Android Maps key |
-| `GOOGLE_MAPS_IOS_API_KEY` | iOS Maps key |
+---
 
 ## 🎮 Demo Credentials
 
 ### Admin Panel
-- **URL**: https://admin.cleancity.in
+- **URL**: http://localhost:3001
 - **Email**: admin@cleancity.in
-- **Password**: demo123
-
-### Worker App
-- **Phone**: +91 9876543210
-- **OTP**: 123456 (demo mode)
-
-## 📊 Property-Based Tests
-
-CleanCity uses property-based testing with fast-check for comprehensive validation:
-
-| Property | Description |
-|----------|-------------|
-| P1-P4 | Report validation (GPS, timestamp, description) |
-| P5-P9 | Abuse prevention (limits, cooldown, duplicates) |
-| P10-P12 | Points and gamification |
-| P13-P17 | Report tracking and status |
-| P18-P19 | Authentication |
-| P20-P25 | Worker task management |
-| P26-P33 | Admin dashboard and analytics |
-| P34 | Offline sync |
-| P35-P36 | Security (rate limiting, XSS) |
-| P37-P39 | Accessibility and i18n |
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
-
-## 🙏 Acknowledgments
-
-- [Expo](https://expo.dev) for the amazing React Native toolchain
-- [NativeWind](https://nativewind.dev) for Tailwind CSS in React Native
-- [fast-check](https://github.com/dubzzz/fast-check) for property-based testing
+- **Password**: admin123
 
 ---
 
-<p align="center">
-  Made with 💚 for cleaner cities
-</p>
+## 🛠️ Tech Stack
+
+- **Mobile**: React Native + Expo SDK 54 + NativeWind
+- **Backend**: Node.js + Express + TypeScript
+- **Admin**: React + Vite + Tailwind CSS
+- **Database**: PostgreSQL 16
+- **Cache**: Redis 7
+- **Maps**: OpenStreetMap (free, no API key needed)
+
+---
+
+## 📄 License
+
+MIT License - feel free to use for hackathons and projects!
+
+---
+
+Made with 💚 for cleaner cities

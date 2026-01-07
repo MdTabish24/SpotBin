@@ -320,7 +320,7 @@ export default function LeaderboardScreen() {
 
       {/* Leaderboard list */}
       {leaderboard.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
+        <View className="flex-1 items-center justify-center px-8 pb-20">
           <Ionicons name="trophy-outline" size={64} color="#D1D5DB" />
           <Text className="text-lg font-semibold text-text-primary mt-4">
             No rankings yet
@@ -335,7 +335,7 @@ export default function LeaderboardScreen() {
           keyExtractor={(item) => item.deviceId}
           renderItem={renderLeaderboardItem}
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}

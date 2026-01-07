@@ -6,6 +6,7 @@
 import sharp from 'sharp';
 import { logger } from '../config/logger';
 import { uploadFile, generateFileKey, isS3Configured } from '../config/s3';
+import { saveFileLocally } from '../config/localStorage';
 
 // ============================================
 // EXIF Data Types
@@ -79,16 +80,18 @@ class ImageService implements IImageService {
       this.MAX_HEIGHT
     );
 
-    // Upload to S3
+    // Upload to S3 or save locally
     if (isS3Configured()) {
       const key = generateFileKey('reports', 'jpg');
       const url = await uploadFile(resizedBuffer, key, 'image/jpeg');
       logger.info({ key, size: resizedBuffer.length }, 'Image uploaded to S3');
       return url;
     } else {
-      // For development without S3, return a placeholder URL
-      logger.warn('S3 not configured, using placeholder URL');
-      return `https://placeholder.cleancity.in/reports/${Date.now()}.jpg`;
+      // For development without S3, save locally
+      logger.info('S3 not configured, saving image locally');
+      const url = await saveFileLocally(resizedBuffer, 'reports', 'jpg');
+      logger.info({ url, size: resizedBuffer.length }, 'Image saved locally');
+      return url;
     }
   }
 

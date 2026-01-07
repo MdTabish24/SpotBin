@@ -6,15 +6,16 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Alert,
   Keyboard,
+  Animated,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
 import { useLocation } from '../../src/hooks/useLocation';
 import { useDeviceFingerprint } from '../../src/hooks/useDeviceFingerprint';
 import { reportApi, GeoLocation } from '../../src/api/reports';
@@ -243,7 +244,7 @@ export default function CameraScreen() {
   // Preview state
   if (captureState === 'preview' && capturedPhoto) {
     return (
-      <SafeAreaView className="flex-1 bg-black">
+      <View className="flex-1 bg-black">
         {/* Photo preview */}
         <View className="flex-1">
           <Image
@@ -281,8 +282,8 @@ export default function CameraScreen() {
           </View>
         </View>
 
-        {/* Action buttons */}
-        <View className="flex-row px-4 py-4 bg-white border-t border-gray-100">
+        {/* Action buttons - with padding for tab bar */}
+        <View className="flex-row px-4 py-4 pb-24 bg-white border-t border-gray-100">
           <Button
             variant="outline"
             onPress={handleRetake}
@@ -301,7 +302,7 @@ export default function CameraScreen() {
             Submit Report
           </Button>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -322,26 +323,30 @@ export default function CameraScreen() {
 
   // Camera view (default state)
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      {/* Camera preview */}
+    <View className="flex-1 bg-black">
+      {/* Camera preview - no children inside CameraView */}
       <CameraView
         ref={cameraRef}
-        style={{ flex: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         facing={cameraType}
-      >
+      />
+
+      {/* Overlay controls - positioned absolutely on top of camera */}
+      <SafeAreaView className="flex-1" edges={['top']}>
         {/* Top controls */}
         <View className="flex-row justify-between items-center px-4 pt-4">
           <TouchableOpacity
             onPress={toggleCameraType}
-            className="w-12 h-12 rounded-full bg-black/30 items-center justify-center"
+            className="w-12 h-12 rounded-full bg-black/50 items-center justify-center"
             accessibilityLabel="Switch camera"
             accessibilityRole="button"
+            style={{ minWidth: 44, minHeight: 44 }}
           >
             <Ionicons name="camera-reverse" size={24} color="white" />
           </TouchableOpacity>
           
-          <View className="bg-black/30 px-3 py-1 rounded-full">
-            <Text className="text-white text-sm">
+          <View className="bg-black/50 px-3 py-2 rounded-full">
+            <Text className="text-white text-sm font-medium">
               {locationPermission ? '📍 GPS Ready' : '⚠️ No GPS'}
             </Text>
           </View>
@@ -349,20 +354,20 @@ export default function CameraScreen() {
 
         {/* Center guide */}
         <View className="flex-1 items-center justify-center">
-          <View className="w-64 h-64 border-2 border-white/30 rounded-2xl" />
-          <Text className="text-white/70 mt-4 text-center px-8">
+          <View className="w-64 h-64 border-2 border-white/40 rounded-2xl" />
+          <Text className="text-white/80 mt-4 text-center px-8 font-medium">
             Point camera at waste and tap capture
           </Text>
         </View>
 
-        {/* Bottom controls */}
-        <View className="items-center pb-8">
+        {/* Bottom controls - with extra padding for tab bar */}
+        <View className="items-center pb-24">
           {/* Capture button */}
           <TouchableOpacity
             onPress={handleCapture}
             disabled={isCapturing}
-            className="w-20 h-20 rounded-full bg-white items-center justify-center"
-            style={{ minWidth: 44, minHeight: 44 }}
+            className="w-20 h-20 rounded-full bg-white items-center justify-center shadow-lg"
+            style={{ minWidth: 80, minHeight: 80, elevation: 5 }}
             accessibilityLabel="Capture photo"
             accessibilityRole="button"
           >
@@ -373,11 +378,11 @@ export default function CameraScreen() {
             )}
           </TouchableOpacity>
           
-          <Text className="text-white/70 mt-3 text-sm">
+          <Text className="text-white/80 mt-3 text-sm font-medium">
             Tap to capture
           </Text>
         </View>
-      </CameraView>
+      </SafeAreaView>
 
       {/* Success Modal */}
       <Modal
@@ -438,6 +443,6 @@ export default function CameraScreen() {
           </Button>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
@@ -8,23 +8,21 @@ import {
   TrendingUp,
   MapPin,
 } from 'lucide-react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import { dashboardApi } from '../api/admin';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { StatusBadge, SeverityBadge } from '../components/ui/Badge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import type { DashboardStats, Report } from '../types';
 
-// Google Maps API Key (should be in env)
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
 // Status colors for markers
 const STATUS_COLORS: Record<string, string> = {
-  open: '#EF4444',      // Red
-  assigned: '#F59E0B',  // Yellow/Orange
-  in_progress: '#F59E0B', // Yellow
-  verified: '#8B5CF6',  // Purple
-  resolved: '#10B981',  // Green
+  open: '#EF4444',
+  assigned: '#F59E0B',
+  in_progress: '#F59E0B',
+  verified: '#8B5CF6',
+  resolved: '#10B981',
 };
 
 interface StatCardProps {
@@ -61,15 +59,13 @@ function StatCard({ title, value, icon, trend, color }: StatCardProps) {
 }
 
 export default function DashboardPage() {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([19.076, 72.8777]);
 
   // Fetch dashboard stats
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: dashboardApi.getStats,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   // Fetch recent reports for map
@@ -79,88 +75,14 @@ export default function DashboardPage() {
     refetchInterval: 60000,
   });
 
-  // Initialize Google Maps
+  // Update map center based on reports
   useEffect(() => {
-    if (!mapRef.current || map) return;
-
-    const loader = new Loader({
-      apiKey: GOOGLE_MAPS_API_KEY,
-      version: 'weekly',
-    });
-
-    loader.load().then(() => {
-      const newMap = new google.maps.Map(mapRef.current!, {
-        center: { lat: 19.076, lng: 72.8777 }, // Mumbai default
-        zoom: 12,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }],
-          },
-        ],
-      });
-      setMap(newMap);
-    }).catch(console.error);
-  }, []);
-
-  // Update markers when reports change
-  useEffect(() => {
-    if (!map || !recentReports) return;
-
-    // Clear existing markers
-    markers.forEach(marker => marker.setMap(null));
-
-    // Create new markers
-    const newMarkers = recentReports.map(report => {
-      const marker = new google.maps.Marker({
-        position: { lat: report.location.lat, lng: report.location.lng },
-        map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: STATUS_COLORS[report.status] || '#EF4444',
-          fillOpacity: 0.9,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-          scale: 10,
-        },
-        title: `Report #${report.id.slice(0, 8)}`,
-      });
-
-      // Info window on click
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="padding: 8px; max-width: 200px;">
-            <p style="font-weight: 600; margin-bottom: 4px;">Report #${report.id.slice(0, 8)}</p>
-            <p style="font-size: 12px; color: #666; margin-bottom: 4px;">
-              Status: ${report.status.replace('_', ' ')}
-            </p>
-            <p style="font-size: 12px; color: #666;">
-              Severity: ${report.severity}
-            </p>
-          </div>
-        `,
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-      });
-
-      return marker;
-    });
-
-    setMarkers(newMarkers);
-
-    // Fit bounds to show all markers
-    if (newMarkers.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
-      newMarkers.forEach(marker => {
-        const pos = marker.getPosition();
-        if (pos) bounds.extend(pos);
-      });
-      map.fitBounds(bounds);
+    if (recentReports && recentReports.length > 0) {
+      const avgLat = recentReports.reduce((sum, r) => sum + r.location.lat, 0) / recentReports.length;
+      const avgLng = recentReports.reduce((sum, r) => sum + r.location.lng, 0) / recentReports.length;
+      setMapCenter([avgLat, avgLng]);
     }
-  }, [map, recentReports]);
+  }, [recentReports]);
 
   if (statsLoading) {
     return <LoadingSpinner fullScreen message="Loading dashboard..." />;
@@ -210,13 +132,44 @@ export default function DashboardPage() {
 
       {/* Map and recent reports */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map */}
+        {/* Map - Using FREE OpenStreetMap */}
         <Card padding="none" className="lg:col-span-2 overflow-hidden">
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Live Report Map</h3>
             <p className="text-sm text-gray-500 mt-1">Real-time waste report locations</p>
           </div>
-          <div ref={mapRef} className="h-96 w-full" />
+          <div className="h-96 w-full">
+            <MapContainer
+              center={mapCenter}
+              zoom={12}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {recentReports?.map((report) => (
+                <CircleMarker
+                  key={report.id}
+                  center={[report.location.lat, report.location.lng]}
+                  radius={10}
+                  fillColor={STATUS_COLORS[report.status] || '#EF4444'}
+                  fillOpacity={0.9}
+                  color="#ffffff"
+                  weight={2}
+                >
+                  <Popup>
+                    <div className="p-1">
+                      <p className="font-semibold">Report #{report.id.slice(0, 8)}</p>
+                      <p className="text-sm text-gray-600">Status: {report.status.replace('_', ' ')}</p>
+                      <p className="text-sm text-gray-600">Severity: {report.severity}</p>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              ))}
+            </MapContainer>
+          </div>
           {/* Legend */}
           <div className="p-4 border-t border-gray-100 flex flex-wrap gap-4">
             {Object.entries(STATUS_COLORS).slice(0, 4).map(([status, color]) => (

@@ -7,7 +7,6 @@ import Toast from 'react-native-toast-message';
 import { toastConfig } from '../src/components/Toast';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initializeUpdates } from '../src/utils/updates';
-import '../global.css';
 
 // Initialize i18n
 import '../src/i18n';

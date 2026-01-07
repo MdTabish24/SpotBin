@@ -3,15 +3,20 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import path from 'path';
 import { logger, requestLogger } from './config/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
 import { apiRateLimiter } from './middleware/rateLimiter';
 import { xssSanitizer } from './middleware/xssSanitizer';
 import { setupSwagger } from './config/swagger';
+import { ensureUploadsDir } from './config/localStorage';
 
 // Load environment variables
 dotenv.config();
+
+// Ensure uploads directory exists for local storage
+ensureUploadsDir();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +63,9 @@ app.use(requestLogger);
 // Setup Swagger API documentation
 setupSwagger(app);
 
+// Serve uploaded files locally (for development without S3)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Rate limiting middleware (100 requests/minute per IP)
 app.use('/api', apiRateLimiter);
 
@@ -68,6 +76,8 @@ import { checkRedisHealth } from './config/redis';
 // Import routes
 import reportRoutes from './routes/report.routes';
 import adminRoutes from './routes/admin.routes';
+import authRoutes from './routes/auth.routes';
+import citizenRoutes, { getLeaderboard } from './routes/citizen.routes';
 
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {
@@ -89,8 +99,12 @@ app.get('/health', async (_req: Request, res: Response) => {
 });
 
 // API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes); // Also mount at v1 for admin panel
 app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/citizens', citizenRoutes);
+app.get('/api/v1/leaderboard', getLeaderboard);
 // app.use('/api/v1/workers', workerRoutes);
 
 // 404 handler

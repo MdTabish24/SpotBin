@@ -8,3 +8,5 @@ export { Modal } from './Modal';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Badge } from './Badge';
 export { EmptyState } from './EmptyState';
+export { FreeMap } from './FreeMap';
+export type { MapMarker } from './FreeMap';

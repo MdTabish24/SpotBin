@@ -3,11 +3,25 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 
 // API base URL - will be configured via environment
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+// Use your machine's local IP for mobile device access
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.103:3000/api/v1';
+
+// Server base URL (without /api/v1)
+export const SERVER_BASE_URL = API_BASE_URL.replace('/api/v1', '');
+
+// Helper to get full image URL
+export const getFullImageUrl = (path: string | undefined): string => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${SERVER_BASE_URL}${path}`;
+};
 
 // Storage keys
 const TOKEN_KEY = 'auth_token';
-const DEVICE_ID_KEY = 'device_id';
+const DEVICE_ID_KEY = 'device_fingerprint';
+
+// Flag to track if we've shown the network error toast
+let networkErrorShown = false;
 
 /**
  * Create axios instance with base configuration
@@ -48,7 +62,11 @@ apiClient.interceptors.request.use(
  * Response interceptor - handles errors globally
  */
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Reset network error flag on successful response
+    networkErrorShown = false;
+    return response;
+  },
   async (error: AxiosError<{ error: { code: string; message: string } }>) => {
     const { response } = error;
 
@@ -112,12 +130,16 @@ apiClient.interceptors.response.use(
           });
       }
     } else if (error.request) {
-      // Network error
-      Toast.show({
-        type: 'error',
-        text1: 'Network Error',
-        text2: 'Please check your internet connection',
-      });
+      // Network error - only show toast once to avoid spam
+      if (!networkErrorShown) {
+        networkErrorShown = true;
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Backend not connected. Using demo mode.',
+          visibilityTime: 3000,
+        });
+      }
     }
 
     return Promise.reject(error);

@@ -3,8 +3,9 @@ import Constants from 'expo-constants';
 // Environment configuration for Expo app
 export const ENV = {
   // API Configuration
+  // Use your machine's local IP for mobile device access
   API_BASE_URL: __DEV__ 
-    ? 'http://localhost:3000/api/v1' 
+    ? 'http://192.168.0.103:3000/api/v1' 
     : 'https://api.cleancity.in/v1',
   
   // Google Maps (loaded from app.json config)
